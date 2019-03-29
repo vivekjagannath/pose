@@ -37,7 +37,7 @@ def getKeypoints(probMap, threshold=0.1):
     keypoints = []
 
     #find the blobs
-    contours,_ = cv2.findContours(mapMask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    im3, contours,_ = cv2.findContours(mapMask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     #for each blob find the maxima
     for cnt in contours:
