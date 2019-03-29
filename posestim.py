@@ -3,8 +3,7 @@ import time
 import numpy as np
 from random import randint
 import math
-inde=int(input())
-cap = cv2.VideoCapture(inde)
+cap = cv2.VideoCapture(0)
 neck,ell,elr,pmr,pml,Rsho,Lsho=(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0)
 protoFile = "pose/coco/pose_deploy_linevec.prototxt"
 weightsFile = "pose/coco/pose_iter_440000.caffemodel"
@@ -159,108 +158,118 @@ def getPersonwiseKeypoints(valid_pairs, invalid_pairs):
                     personwiseKeypoints = np.vstack([personwiseKeypoints, row])
     return personwiseKeypoints
 
+    def advaykafunc():
+        frameWidth = 640
+        frameHeight = 480
 
-frameWidth = 640
-frameHeight = 480
+        t = time.time()
+        net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
 
-t = time.time()
-net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
+        # Fix the input Height and get the width according to the Aspect Ratio
+        # inHeight = 368
+        # inWidth = int((inHeight/frameHeight)*frameWidth)
+        num=1
+        while True:
+            ret,image1=cap.read()
+            inpBlob = cv2.dnn.blobFromImage(image1, 1.0 / 255, (100, 100),(0, 0, 0), swapRB=False, crop=False)
 
-# Fix the input Height and get the width according to the Aspect Ratio
-# inHeight = 368
-# inWidth = int((inHeight/frameHeight)*frameWidth)
-num=1
-while True:
-    ret,image1=cap.read()
-    inpBlob = cv2.dnn.blobFromImage(image1, 1.0 / 255, (100, 100),(0, 0, 0), swapRB=False, crop=False)
+            net.setInput(inpBlob)
+            output = net.forward()
+            print("Time Taken in forward pass = {}".format(time.time() - t))
 
-    net.setInput(inpBlob)
-    output = net.forward()
-    print("Time Taken in forward pass = {}".format(time.time() - t))
+            detected_keypoints = []
+            keypoints_list = np.zeros((0,3))
+            keypoint_id = 0
+            threshold = 0.1
 
-    detected_keypoints = []
-    keypoints_list = np.zeros((0,3))
-    keypoint_id = 0
-    threshold = 0.1
+            for part in range(nPoints):
+                probMap = output[0,part,:,:]
+                probMap = cv2.resize(probMap, (image1.shape[1], image1.shape[0]))
+                keypoints = getKeypoints(probMap, threshold)
+                if len(keypoints)!=0:
+                    if keypointsMapping[part]=="Neck":
+                        neck=(keypoints[0][0],keypoints[0][1])
+                        print keypointsMapping[part],neck
+                        x0,y0=neck[0],neck[1]
+                    if keypointsMapping[part]=="R-Sho":
+                        Rsho=(keypoints[0][0],keypoints[0][1])
+                        print keypointsMapping[part],Rsho
+                        x1,y1=Rsho[0],Rsho[1]
+                    if keypointsMapping[part]=="L-Sho":
+                        Lsho=(keypoints[0][0],keypoints[0][1])
+                        print keypointsMapping[part],Lsho
+                        x2,y2=Lsho[0],Lsho[1]
+                    if keypointsMapping[part]=="R-Elb":
+                        elr=(keypoints[0][0],keypoints[0][1])
+                        print keypointsMapping[part],elr
+                        x3,y3=elr[0],elr[1]                
+                    if keypointsMapping[part]=="L-Elb":
+                        ell=(keypoints[0][0],keypoints[0][1])
+                        print keypointsMapping[part],ell
+                        x4,y4=ell[0],ell[1]
+                    if keypointsMapping[part]=="R-Wr":
+                        pmr=(keypoints[0][0],keypoints[0][1])
+                        print keypointsMapping[part],pmr
+                        x5,y5=pmr[0],pmr[1]
+                    if keypointsMapping[part]=="L-Wr":
+                        pml=(keypoints[0][0],keypoints[0][1])
+                        print keypointsMapping[part],pml
+                        x6,y6=pml[0],pml[1]
+                keypoints_with_id = []
+                for i in range(len(keypoints)):
+                    keypoints_with_id.append(keypoints[i] + (keypoint_id,))
+                    keypoints_list = np.vstack([keypoints_list, keypoints[i]])
+                    keypoint_id += 1
 
-    for part in range(nPoints):
-        probMap = output[0,part,:,:]
-        probMap = cv2.resize(probMap, (image1.shape[1], image1.shape[0]))
-        keypoints = getKeypoints(probMap, threshold)
-        if len(keypoints)!=0:
-            if keypointsMapping[part]=="Neck":
-                neck=(keypoints[0][0],keypoints[0][1])
-                print keypointsMapping[part],neck
-            if keypointsMapping[part]=="R-Sho":
-                Rsho=(keypoints[0][0],keypoints[0][1])
-                print keypointsMapping[part],Rsho
-            if keypointsMapping[part]=="L-Sho":
-                Lsho=(keypoints[0][0],keypoints[0][1])
-                print keypointsMapping[part],Lsho
-            if keypointsMapping[part]=="R-Elb":
-                elr=(keypoints[0][0],keypoints[0][1])
-                print keypointsMapping[part],elr
-            if keypointsMapping[part]=="L-Elb":
-                ell=(keypoints[0][0],keypoints[0][1])
-                print keypointsMapping[part],ell
-            if keypointsMapping[part]=="R-Wr":
-                pmr=(keypoints[0][0],keypoints[0][1])
-                print keypointsMapping[part],pmr
-            if keypointsMapping[part]=="L-Wr":
-                pml=(keypoints[0][0],keypoints[0][1])
-                print keypointsMapping[part],pml
-        keypoints_with_id = []
-        for i in range(len(keypoints)):
-            keypoints_with_id.append(keypoints[i] + (keypoint_id,))
-            keypoints_list = np.vstack([keypoints_list, keypoints[i]])
-            keypoint_id += 1
+                detected_keypoints.append(keypoints_with_id)
 
-        detected_keypoints.append(keypoints_with_id)
+            frameClone = image1.copy()
+            # for i in range(nPoints):
+            #     for j in range(len(detected_keypoints[i])):
+            #         cv2.circle(frameClone, detected_keypoints[i][j][0:2], 5, colors[i], -1, cv2.LINE_AA)
+            # cv2.imshow("Keypoints",frameClone)
+            valid_pairs, invalid_pairs = getValidPairs(output)
+            personwiseKeypoints = getPersonwiseKeypoints(valid_pairs, invalid_pairs)
 
-    frameClone = image1.copy()
-    # for i in range(nPoints):
-    #     for j in range(len(detected_keypoints[i])):
-    #         cv2.circle(frameClone, detected_keypoints[i][j][0:2], 5, colors[i], -1, cv2.LINE_AA)
-    # cv2.imshow("Keypoints",frameClone)
-    valid_pairs, invalid_pairs = getValidPairs(output)
-    personwiseKeypoints = getPersonwiseKeypoints(valid_pairs, invalid_pairs)
-
-    for i in range(17):
-        for n in range(len(personwiseKeypoints)):
-            index = personwiseKeypoints[n][np.array(POSE_PAIRS[i])]
-            if -1 in index:
-                continue
-            B = np.int32(keypoints_list[index.astype(int), 0])
-            A = np.int32(keypoints_list[index.astype(int), 1])
-            cv2.line(frameClone, (B[0], A[0]), (B[1], A[1]), colors[i], 3, cv2.LINE_AA)
+            for i in range(17):
+                for n in range(len(personwiseKeypoints)):
+                    index = personwiseKeypoints[n][np.array(POSE_PAIRS[i])]
+                    if -1 in index:
+                        continue
+                    B = np.int32(keypoints_list[index.astype(int), 0])
+                    A = np.int32(keypoints_list[index.astype(int), 1])
+                    cv2.line(frameClone, (B[0], A[0]), (B[1], A[1]), colors[i], 3, cv2.LINE_AA)
 
 
-    cv2.imshow("Detected Pose" , frameClone)
-    k=cv2.waitKey(1)
-    if k == 27:
-        break
-    elif k == ord("c"):
-        name=str(num+1)+".jpg"
-        cv2.imwrite(name,frameClone)
-        break
-yi=cv2.imread(name)
-cv2.imshow("n",yi)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-def dis(x1,y1,x2,y2):
-    return math.hypot(x2 - x1, y2 - y1)
-l1 = dis(Lsho[0],Lsho[1],ell[0],ell[1])
-print ("l1",l1)
-l2 = dis(pml[0],pml[1],ell[0],ell[1])
-print ("l2",l2)
-r1 = dis(Rsho[0],Rsho[1],elr[0],elr[1])
-print ("r1",r1)
-r2 = dis(elr[0],elr[1],pmr[0],pmr[1])
-print ("r2",r2)
-s = dis(Lsho[0],Lsho[1],Rsho[0],Rsho[1])
-print ("s",s)
+            cv2.imshow("Detected Pose" , frameClone)
+            k=cv2.waitKey(1)
+            if k == 27:
+                break
+            elif k == ord("c"):
+                name=str(num+1)+".jpg"
+                cv2.imwrite(name,frameClone)
+                break
+        #yi=cv2.imread(name)
+        #cv2.imshow("n",yi)
+        #cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        # def dis(x1,y1,x2,y2):
+        #     return math.hypot(x2 - x1, y2 - y1)
+        # l1 = dis(Lsho[0],Lsho[1],ell[0],ell[1])
+        # print ("l1",l1)
+        # l2 = dis(pml[0],pml[1],ell[0],ell[1])
+        # print ("l2",l2)
+        # r1 = dis(Rsho[0],Rsho[1],elr[0],elr[1])
+        # print ("r1",r1)
+        # r2 = dis(elr[0],elr[1],pmr[0],pmr[1])
+        # print ("r2",r2)
+        # s = dis(Lsho[0],Lsho[1],Rsho[0],Rsho[1])
+        # print ("s",s)
 
-print("r1/r2",r1/r2)
-print("l1/l2",l1/l2)
-print("s/l1",s/l1)
-print("s/r1",s/r1)
+        # print("r1/r2",r1/r2)
+        # print("l1/l2",l1/l2)
+        # print("s/l1",s/l1)
+        # print("s/r1",s/r1)
+        print (x6,y6,x4,y4,x2,y2,x0,y0,x1,y1,x3,y3,x5,y5)
+        return x6,y6,x4,y4,x2,y2,x0,y0,x1,y1,x3,y3,x5,y5
+
