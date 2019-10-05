@@ -132,12 +132,12 @@ d.speed(3, 40)
 d.speed(4, 40)
 d.speed(5, 40)
 d.speed(6, 40)
-stand = {3: 2720, 4: 1024, 5: 2048, 6: 2048}
-d.set_goal_position(stand)
-e4, e1, e2, x6, y6, x4, y4, x2, y2, x0, y0, x1, y1, x3, y3, x5, y5 = posestim.advaykafunc()
-e1/e4 = c1
-e1/e2 = c2
-time.sleep(3)
+# stand = {3: 2720, 4: 1024, 5: 2048, 6: 2048}
+# d.set_goal_position(stand)
+# e4, e1, e2, x6, y6, x4, y4, x2, y2, x0, y0, x1, y1, x3, y3, x5, y5 = posestim.advaykafunc()
+# e1/e4 = c1
+# e1/e2 = c2
+# time.sleep(3)
 while True:
-    f4, f1, f2, x6, y6, x4, y4, x2, y2, x0, y0, x1, y1, x3, y3, x5, y5 = posestim.advaykafunc()
+    x6, y6, x4, y4, x2, y2, x0, y0, x1, y1, x3, y3, x5, y5 = posestim.advaykafunc()
     move(c1, c2)
