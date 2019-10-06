@@ -4,6 +4,7 @@ import numpy as np
 from random import randint
 import math
 
+#creating global variables to store the co-ordinates
 x6, y6, x4, y4, x2, y2, x0, y0, x1, y1, x3, y3, x5, y5 = (
     0,
     0,
@@ -23,6 +24,7 @@ x6, y6, x4, y4, x2, y2, x0, y0, x1, y1, x3, y3, x5, y5 = (
 
 def advaykafunc():
     global x6, y6, x4, y4, x2, y2, x0, y0, x1, y1, x3, y3, x5, y5
+    #index 0 for integrated web cam change to 1/2 accordingly for usb camera
     cap = cv2.VideoCapture(0)
     neck, ell, elr, pmr, pml, Rsho, Lsho = (
         (0, 0),
@@ -34,6 +36,7 @@ def advaykafunc():
         (0, 0),
     )
 
+    #path for the trianed models
     protoFile = "pose/coco/pose_deploy_linevec.prototxt"
     weightsFile = "pose/coco/pose_iter_440000.caffemodel"
     nPoints = 18
@@ -301,6 +304,7 @@ def advaykafunc():
     num = 1
     while True:
         ret, image1 = cap.read()
+        #reduce the resize arguments for increase in speed and increase the arguments for increase in accuracy
         inpBlob = cv2.dnn.blobFromImage(
             image1, 1.0 / 255, (150, 150), (0, 0, 0), swapRB=False, crop=False
         )
@@ -317,10 +321,11 @@ def advaykafunc():
             probMap = output[0, part, :, :]
             probMap = cv2.resize(probMap, (image1.shape[1], image1.shape[0]))
             keypoints = getKeypoints(probMap, threshold)
+            #assigning only neck,shoulders,elbows and wrists
             if len(keypoints) != 0:
                 if keypointsMapping[part] == "Neck":
                     neck = (keypoints[0][0], keypoints[0][1])
-
+                    
                     # print keypointsMapping[part],neck
                     x0, y0 = neck[0], neck[1]
                 if keypointsMapping[part] == "R-Sho":
