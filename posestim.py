@@ -37,8 +37,8 @@ def advaykafunc():
     )
 
     #path for the trianed models
-    protoFile = "pose/coco/pose_deploy_linevec.prototxt"
-    weightsFile = "pose/coco/pose_iter_440000.caffemodel"
+    protoFile = "./pose/coco/pose_deploy_linevec.prototxt"
+    weightsFile = "./pose/coco/pose_iter_440000.caffemodel"
     nPoints = 18
 
     # COCO Output Format
@@ -136,7 +136,7 @@ def advaykafunc():
         mapMask = np.uint8(mapSmooth > threshold)
         keypoints = []
         # find the blobs
-        im3, contours, _ = cv2.findContours(
+        contours,_ = cv2.findContours(
             mapMask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
         )
         # for each blob find the maxima
@@ -206,7 +206,7 @@ def advaykafunc():
                         # Find L(p(u))
                         paf_interp = []
                         for k in range(len(interp_coord)):
-                            paf_interp.append(
+                            paf_interp.append([
                                     pafA[
                                         int(round(interp_coord[k][1])),
                                         int(round(interp_coord[k][0])),
@@ -215,7 +215,8 @@ def advaykafunc():
                                         int(round(interp_coord[k][1])),
                                         int(round(interp_coord[k][0])),
                                     ],
-                                ]
+				]
+
                             )
 
                         # Find E
